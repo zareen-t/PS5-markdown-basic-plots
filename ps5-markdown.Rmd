@@ -1,0 +1,20 @@
+---
+title: "ps5-markdown"
+author: "Zareen Tasnim"
+date: "2023-02-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+
+## Load and Check Data
+
+1. 
