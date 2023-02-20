@@ -227,21 +227,17 @@ want to check out the lag() function. And do not forget to group data by contine
 using lag(), otherwise your results will be messed up! See https://faculty.washington.
 edu/otoomet/info201-book/dplyr.html#dplyr-helpers-compute.
 ```{r, message=FALSE}
-LE_1960_2019 <- gapminder %>% 
-  filter(time == "1960" | time == "2019" & !is.na(lifeExpectancy))
-
-avg_LE <- LE_1960_2019 %>% 
+gapminder %>% 
+  drop_na(region, lifeExpectancy) %>% 
+  filter(time == c("1960", "2019")) %>% 
   group_by(region, time) %>% 
-  summarize(avg = mean(lifeExpectancy))
-
-avg_LE %>% 
-  group_by(region) %>% 
-  mutate(growth = (avg - lag(avg))/lag(avg)) %>% 
-  filter(time == "2019") %>% 
+  summarize(avg = mean(lifeExpectancy)) %>% 
+  mutate(previous = lag(avg), growth = avg - previous) %>% 
+  drop_na(previous, growth) %>% 
   arrange(desc(growth))
 ```
 
-I can see that Africa has had the most growth while Europe is at the bottom. It's interesting to see how the more developed countries with higher GDP have a smaller growth compared to the less developed countries.
+I can see that Asia has had the most growth while Europe is at the bottom. It's interesting to see how the more developed countries with higher GDP have a smaller growth compared to the less developed countries since they were already pretty developed.
 
 6. (6pt) Show the histogram of GDP per capita for years of 1960 and 2019. Try to put both histograms on the same graph, see how well you can do it!
 ```{r, message=FALSE}
@@ -266,33 +262,32 @@ gapminder %>%
     filter(time == "1960") %>% 
     mutate(us_rank = rank(desc(lifeExpectancy))) %>% 
     filter(name == "United States of America")
+gapminder %>%
+    select(name, time, lifeExpectancy) %>% 
+    filter(name != "", !is.na(time), !is.na(lifeExpectancy)) %>%
+    filter(time == "2019") %>% 
+    mutate(us_rank = rank(desc(lifeExpectancy))) %>% 
+    filter(name == "United States of America")
 ```
 
-The ranking was 17 for the US.
+The ranking was 17 in 1960 and 46 in 2019 for the US.
 
 8. (6pt) If you did this correctly, then you noticed that US ranking has been falling quite a bit. But we also have more countries in 2019–what about the relative rank divided by the corresponding number of countries that have LE data in the corresponding year?
 Hint: 0.0904 for 1960
 ```{r, message=FALSE}
-le_data <- gapminder %>% 
-  filter(time %in% c("1960", "2019") & !is.na(lifeExpectancy))
-
-le_data <- le_data %>% 
-  group_by(time, region) %>% 
-  mutate(rank = dense_rank(-lifeExpectancy))
-
-num <- le_data %>% 
+gapminder %>% 
+  select(name, lifeExpectancy, time) %>% 
+  filter(!is.na(lifeExpectancy), !is.na(name), time %in% c("1960", "2019")) %>% 
+  arrange(time, desc(lifeExpectancy)) %>% 
   group_by(time) %>% 
-  summarise(num = n_distinct(name))
-
-le_data <- le_data %>% 
-  left_join(num, by = "time") %>% 
-  mutate(rank = rank / num)
-
-le_data %>% filter(name == "United States of America") %>% 
-  select(time, rank)
+  mutate(ranking = rank(desc(lifeExpectancy))) %>% 
+  select(name, time, ranking) %>% 
+  group_by(time) %>% 
+  mutate(total = max(ranking)) %>% 
+  filter(name == "United States of America") %>%
+  summarise(relative_ranking = ranking/total)
 ```
-
-
+1960 is 0.0904 and 2019 is 0.2347.
 
 ## Finally, how many hours did you spend?
 
